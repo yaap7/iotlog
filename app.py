@@ -1,9 +1,10 @@
 import sqlite3
 from os import path
 from flask import Flask
+from flask import render_template
 from flask import request
 
-from datetime import date
+from datetime import datetime
 from time import time
 
 
@@ -33,16 +34,16 @@ def get_db_connection():
     return conn
 
 
-def retourne_les_donnees() -> list:
+def retourne_les_donnees(limit: int = 10) -> list:
     """Retourne les derniers enregistrements de la base de données.
     Renvoie une liste de dictionnaire."""
     conn = get_db_connection()
+    cur = conn.cursor()
     req_select = """SELECT *
     FROM iot_data
     ORDER BY temps desc
-    LIMIT 10"""
-    result = conn.execute(req_select).fetchall()
-    print(result)
+    LIMIT ?"""
+    result = cur.execute(req_select, (limit,)).fetchall()
     conn.close()
     return result
 
@@ -50,7 +51,7 @@ def retourne_les_donnees() -> list:
 def inserer_un_log(cle: str, valeur: str) -> None:
     """Retourne les derniers enregistrements de la base de données.
     Renvoie une liste de dictionnaire."""
-    temps = date.fromtimestamp(time()).strftime("YYYY-MM-DD HH:MM:SS")
+    temps = datetime.fromtimestamp(time()).strftime("%Y-%m-%d %H:%M:%S")
     conn = get_db_connection()
     cur = conn.cursor()
     requete_import = "INSERT INTO iot_data (temps, cle, valeur) VALUES (?, ?, ?)"
@@ -62,22 +63,14 @@ def inserer_un_log(cle: str, valeur: str) -> None:
 
 @app.route("/get")
 def retrieve_data():
-    retour = ""
     if request.args:
-        retour = f"J'ai bien reçu {request.args}\n"
-    else:
-        retour = (
-            "<p>Je n'ai rien reçu, donc je te renvoie les 10 dernières entrées</p>\n"
-        )
-        lignes = retourne_les_donnees()
-        # TODO : finir ça.
-        for ligne in lignes:
-            print(f"ligne = {ligne}")
-            print(f"temps = {ligne['temps']}")
-            print(f"cle = {ligne['cle']}")
-            print(f"valeur = {ligne['valeur']}")
-            retour += f"<p>ligne = {ligne}</p>\n"
-    return retour
+        for cle, valeur in request.args.items():
+            inserer_un_log(cle, valeur)
+    # Afficher les dernières données
+    return render_template(
+        "get_data.html",
+        lignes=retourne_les_donnees()
+    )
 
 
 @app.route("/post")

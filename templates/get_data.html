@@ -1,0 +1,41 @@
+{% extends 'layout.html' %}
+
+{% block head %}
+<meta name="description" content="Récupération des données.">
+{% endblock %}
+
+{% block body %}
+  <section class="section">
+    <div class="container">
+
+      <h1 class="title is-1 text-center" id="titre">
+        Données enregistrées
+      </h1>
+      {% if lignes|length > 0 %}
+      <div>
+        <table class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth">
+            <thead>
+                <tr><th>Temps</th><th>Clé</th><th>Valeur</th></tr>
+            </thead>
+            <tbody>
+            {% for ligne in lignes %}
+                <tr>
+                    <td>{{ ligne['temps'] }}</td>
+                    <td>{{ ligne['cle'] }}</td>
+                    <td>{{ ligne['valeur'] }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div>
+        <p>
+          il n'y a rien.
+        </p>
+      </div>
+      {% endif %}
+
+    </div>
+  </section>
+{% endblock %}
