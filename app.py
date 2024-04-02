@@ -13,7 +13,6 @@ from os import path
 from time import time
 
 import plotly.graph_objs as go
-import plotly.express as px
 from plotly.subplots import make_subplots
 from plotly.utils import PlotlyJSONEncoder
 
@@ -79,7 +78,6 @@ def create_graph(key_regexes: list) -> PlotlyJSONEncoder:
     """Returns a JSON-encoded plotly object representing the graph of the data gathered"""
     # TODO : réparer cette fonction pour autoriser l'affichage de plusieurs lignes sur un même graphe.
     # Exemple : température et humidité sur un même graphe
-    fig = go.Figure()
     fig = make_subplots(specs=[[{"secondary_y": True}]])
     print(f"fig = {fig}")
     print(f"key_regexes = {key_regexes}")
