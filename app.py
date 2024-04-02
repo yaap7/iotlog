@@ -1,11 +1,23 @@
+#!/usr/bin/env python3
+
+"""
+Simple flask application to store and show simple "key/value" data
+"""
+
+import json
+import re
 import sqlite3
+
+from datetime import datetime
 from os import path
+from time import time
+
+import plotly.express as px
+from plotly.utils import PlotlyJSONEncoder
+
 from flask import Flask
 from flask import render_template
 from flask import request
-
-from datetime import datetime
-from time import time
 
 
 PROJECT_ROOT = path.dirname(path.realpath(__file__))
@@ -61,22 +73,48 @@ def inserer_un_log(cle: str, valeur: str) -> None:
     return "OK"
 
 
-@app.route("/get")
-def retrieve_data():
-    if request.args:
-        for cle, valeur in request.args.items():
-            inserer_un_log(cle, valeur)
-    # Afficher les dernières données
-    return render_template(
-        "get_data.html",
-        lignes=retourne_les_donnees()
+def create_graph(key_regex: str = r".*"):
+    """Returns a JSON-encoded plotly object representing the graph of the data gathered"""
+    regex = re.compile(key_regex)
+    plots = []
+    for line in retourne_les_donnees(limit=1000):
+        if regex.fullmatch(line["cle"]):
+            plots.append((line["temps"], line["valeur"]))
+
+    x = [i[0] for i in plots]
+    y = [i[1] for i in plots]
+    fig = px.line(
+        x=x,
+        y=y,
+        color=px.Constant(key_regex),
+        labels=dict(x="Time", y="Value", color="Key"),
     )
+    return json.dumps(fig, cls=PlotlyJSONEncoder)
+
+
+@app.route("/")
+@app.route("/get")
+def get_data():
+    """Get data and print them in a small HTML page without anything fancy"""
+    limit = 10
+    if "limit" in request.args:
+        limit = request.args["limit"]
+    # Afficher les dernières données
+    return render_template("get_data.html", lignes=retourne_les_donnees(limit=limit))
 
 
 @app.route("/post")
 def store_data():
+    """Simply store each data got in argument and print a simple return message."""
     retour = ""
     for arg in request.args:
         code_retour = inserer_un_log(arg, request.args[arg])
         retour += f'<p>Insertion de "{arg}" = {code_retour}</p>\n'
     return retour
+
+
+@app.route("/graph")
+def print_graph():
+    """Simply put a simple graph in an almost empty web page"""
+    graph = create_graph()
+    return render_template("print_graph.html", graph=graph)

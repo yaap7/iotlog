@@ -1,0 +1,26 @@
+{% extends 'layout.html' %}
+
+{% block head %}
+<meta name="description" content="Affichage du graphique">
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
+{% endblock %}
+
+{% block body %}
+  <section class="section">
+    <div class="container">
+
+      <h1 class="title is-1 text-center" id="titre">
+        Graphique
+      </h1>
+      
+      <div class="chart" id="bargraph">
+        <script>
+          var graphs = {{ graph | safe }};
+          Plotly.plot('bargraph',graphs,{});
+        </script>
+      </div>
+
+    </div>
+  </section>
+{% endblock %}
