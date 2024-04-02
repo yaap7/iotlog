@@ -12,7 +12,9 @@ from datetime import datetime
 from os import path
 from time import time
 
+import plotly.graph_objs as go
 import plotly.express as px
+from plotly.subplots import make_subplots
 from plotly.utils import PlotlyJSONEncoder
 
 from flask import Flask
@@ -73,22 +75,40 @@ def inserer_un_log(cle: str, valeur: str) -> None:
     return "OK"
 
 
-def create_graph(key_regex: str = r".*"):
+def create_graph(key_regexes: list) -> PlotlyJSONEncoder:
     """Returns a JSON-encoded plotly object representing the graph of the data gathered"""
-    regex = re.compile(key_regex)
-    plots = []
-    for line in retourne_les_donnees(limit=1000):
-        if regex.fullmatch(line["cle"]):
-            plots.append((line["temps"], line["valeur"]))
+    # TODO : réparer cette fonction pour autoriser l'affichage de plusieurs lignes sur un même graphe.
+    # Exemple : température et humidité sur un même graphe
+    fig = go.Figure()
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+    print(f"fig = {fig}")
+    print(f"key_regexes = {key_regexes}")
+    i = 0
+    for key_regex in key_regexes:
+        regex = re.compile(key_regex)
+        plots = []
+        for line in retourne_les_donnees(limit=1000):
+            if regex.fullmatch(line["cle"]):
+                plots.append((line["temps"], line["valeur"]))
 
-    x = [i[0] for i in plots]
-    y = [i[1] for i in plots]
-    fig = px.line(
-        x=x,
-        y=y,
-        color=px.Constant(key_regex),
-        labels=dict(x="Time", y="Value", color="Key"),
-    )
+        x = [i[0] for i in plots]
+        y = [float(i[1]) for i in plots]
+        fig.add_trace(
+            go.Scatter(
+                x=x,
+                y=y,
+                name=key_regex,
+            ),
+            secondary_y=(i % 2 == 1),
+        )
+        i += 1
+
+    # Set x-axis title
+    fig.update_xaxes(title_text="Time")
+
+    # Set y-axes titles
+    fig.update_yaxes(title_text="Temperature", secondary_y=False)
+    fig.update_yaxes(title_text="Humidity", secondary_y=True)
     return json.dumps(fig, cls=PlotlyJSONEncoder)
 
 
@@ -116,5 +136,8 @@ def store_data():
 @app.route("/graph")
 def print_graph():
     """Simply put a simple graph in an almost empty web page"""
-    graph = create_graph()
+    key_regexes = [value for value in request.args.getlist("key")]
+    if len(key_regexes) < 1:
+        return render_template("empty.html")
+    graph = create_graph(key_regexes)
     return render_template("print_graph.html", graph=graph)
