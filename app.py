@@ -134,7 +134,7 @@ def store_data():
 @app.route("/graph")
 def print_graph():
     """Simply put a simple graph in an almost empty web page"""
-    key_regexes = [value for value in request.args.getlist("key")]
+    key_regexes = list(value for value in request.args.getlist("key"))
     if len(key_regexes) < 1:
         return render_template("empty.html")
     graph = create_graph(key_regexes)
